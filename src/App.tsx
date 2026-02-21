@@ -22,7 +22,11 @@ import {
   Mail, 
   User,
   ChevronRight,
-  Search
+  Search,
+  HelpCircle,
+  BookOpen,
+  MousePointer2,
+  Bell
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FollowUp, TeamMember, Stats } from './types';
@@ -88,6 +92,7 @@ export default function App() {
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [editingFollowUp, setEditingFollowUp] = useState<FollowUp | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
 
   const requestNotificationPermission = async () => {
@@ -216,6 +221,9 @@ export default function App() {
   const filteredFollowUps = followUps.filter(fu => {
     const matchesSearch = fu.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                          fu.phone.includes(searchQuery);
+    
+    if (searchQuery) return matchesSearch;
+    
     if (activeTab === 'today') {
       return fu.next_follow_up === today && matchesSearch;
     }
@@ -228,29 +236,116 @@ export default function App() {
       <header className="bg-white border-b border-black/5 sticky top-0 z-30 px-6 py-4">
         <div className="max-w-2xl mx-auto flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">The Follow Up</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
+              {searchQuery ? 'Search Results' : 'The Follow Up'}
+            </h1>
             <p className="text-xs font-medium text-zinc-500 uppercase tracking-widest mt-0.5">
-              {activeTab === 'today' ? "Today's Schedule" : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+              {searchQuery ? `Found ${filteredFollowUps.length} matches` : (activeTab === 'today' ? "Today's Schedule" : activeTab.charAt(0).toUpperCase() + activeTab.slice(1))}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="relative hidden sm:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-              <input 
-                type="text" 
-                placeholder="Search..." 
-                className="pl-10 pr-4 py-2 bg-zinc-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-black/5 w-48"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+          {activeTab === 'today' && (
+            <div className="flex items-center gap-3 flex-1 justify-end">
+              <div className="relative w-full max-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                <input 
+                  type="text" 
+                  placeholder="Search..." 
+                  className="w-full pl-10 pr-10 py-2 bg-zinc-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-black/5 transition-all"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-zinc-200 rounded-full text-zinc-400 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-6 py-8">
         <AnimatePresence mode="wait">
-          {activeTab === 'today' && (
+          {searchQuery ? (
+            <motion.div 
+              key="search-results"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-4"
+            >
+              {filteredFollowUps.length === 0 ? (
+                <div className="text-center py-20">
+                  <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Search className="w-8 h-8 text-zinc-400" />
+                  </div>
+                  <h3 className="text-zinc-900 font-semibold">No matches found</h3>
+                  <p className="text-zinc-500 text-sm mt-1">Try searching for a different name or number</p>
+                </div>
+              ) : (
+                filteredFollowUps.map(fu => (
+                  <Card key={fu.id} className="group hover:border-black/20 transition-all">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="text-lg font-bold text-zinc-900">{fu.customer_name}</h3>
+                        <div className="flex items-center gap-2 text-zinc-500 text-sm mt-1">
+                          <Phone className="w-3.5 h-3.5" />
+                          <span>{fu.phone}</span>
+                          {fu.secondary_phone && <span className="text-zinc-300">|</span>}
+                          {fu.secondary_phone && <span>{fu.secondary_phone}</span>}
+                        </div>
+                      </div>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button variant="ghost" className="p-2" onClick={() => { setEditingFollowUp(fu); setIsModalOpen(true); }}>
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" className="p-2 text-red-500 hover:bg-red-50" onClick={() => handleDeleteFollowUp(fu.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 pt-3 border-t border-black/5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center">
+                          <Bike className="w-4 h-4 text-zinc-600" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Bike Model</p>
+                          <p className="text-sm font-semibold text-zinc-700">{fu.bike || 'N/A'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                          <IndianRupee className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Due Amount</p>
+                          <p className="text-sm font-bold text-emerald-700">₹{fu.due_amount.toLocaleString()}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs font-medium text-zinc-400">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>Next: {fu.next_follow_up}</span>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${fu.finance_cash === 'Finance' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'}`}>
+                        {fu.finance_cash}
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </motion.div>
+          ) : (
+            <>
+              {activeTab === 'today' && (
             <motion.div 
               key="today"
               initial={{ opacity: 0, y: 10 }}
@@ -407,6 +502,19 @@ export default function App() {
               className="space-y-6"
             >
               <Card className="divide-y divide-black/5 p-0 overflow-hidden">
+                <div className="p-4 flex items-center justify-between hover:bg-zinc-50 cursor-pointer group" onClick={() => setIsGuideOpen(true)}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+                      <BookOpen className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-zinc-900">Application Guide</p>
+                      <p className="text-xs text-zinc-500">Learn how to use the app</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:text-zinc-500" />
+                </div>
+
                 <div className="p-4 flex items-center justify-between hover:bg-zinc-50 cursor-pointer group" onClick={requestNotificationPermission}>
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${notificationPermission === 'granted' ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-100 text-zinc-600'}`}>
@@ -465,18 +573,27 @@ export default function App() {
               </div>
             </motion.div>
           )}
-        </AnimatePresence>
-      </main>
+        </>
+      )}
+    </AnimatePresence>
+  </main>
 
       {/* Floating Action Button */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => { setEditingFollowUp(null); setIsModalOpen(true); }}
-        className="fixed right-6 bottom-24 w-14 h-14 bg-black text-white rounded-2xl shadow-xl flex items-center justify-center z-40"
-      >
-        <Plus className="w-6 h-6" />
-      </motion.button>
+      <AnimatePresence>
+        {activeTab === 'today' && (
+          <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => { setEditingFollowUp(null); setIsModalOpen(true); }}
+            className="fixed right-6 bottom-24 w-14 h-14 bg-black text-white rounded-2xl shadow-xl flex items-center justify-center z-40"
+          >
+            <Plus className="w-6 h-6" />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-black/5 px-6 py-3 z-40">
@@ -489,7 +606,10 @@ export default function App() {
           ].map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setSearchQuery('');
+              }}
               className={`flex flex-col items-center gap-1 transition-all ${activeTab === tab.id ? 'text-black' : 'text-zinc-400'}`}
             >
               <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'fill-black/10' : ''}`} />
@@ -596,6 +716,92 @@ export default function App() {
                   <Button className="flex-[2]" type="submit">Add Member</Button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Guide Modal */}
+      <AnimatePresence>
+        {isGuideOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsGuideOpen(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-lg bg-white rounded-[32px] shadow-2xl overflow-hidden"
+            >
+              <div className="p-6 border-b border-black/5 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <BookOpen className="w-6 h-6 text-purple-600" />
+                  <h2 className="text-xl font-bold text-zinc-900">Application Guide</h2>
+                </div>
+                <button onClick={() => setIsGuideOpen(false)} className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
+                  <X className="w-5 h-5 text-zinc-400" />
+                </button>
+              </div>
+              <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+                <section className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Plus className="w-5 h-5 text-black" />
+                    <h3 className="font-bold text-zinc-900">Adding Follow-Ups</h3>
+                  </div>
+                  <p className="text-sm text-zinc-600 leading-relaxed">
+                    Click the floating <span className="font-bold text-black">+</span> button at the bottom right of any screen to add a new customer follow-up. Fill in the customer details, bike model, and the next follow-up date.
+                  </p>
+                </section>
+
+                <section className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-black" />
+                    <h3 className="font-bold text-zinc-900">Daily Schedule</h3>
+                  </div>
+                  <p className="text-sm text-zinc-600 leading-relaxed">
+                    The <span className="font-bold">Today</span> tab shows all follow-ups scheduled for the current date. You can edit or delete them directly from the cards.
+                  </p>
+                </section>
+
+                <section className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-5 h-5 text-black" />
+                    <h3 className="font-bold text-zinc-900">Push Notifications</h3>
+                  </div>
+                  <p className="text-sm text-zinc-600 leading-relaxed">
+                    Enable <span className="font-bold">Push Notifications</span> in the Settings tab to receive real-time reminders for today's follow-ups. Ensure you grant browser permission when prompted.
+                  </p>
+                </section>
+
+                <section className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-black" />
+                    <h3 className="font-bold text-zinc-900">Team Management</h3>
+                  </div>
+                  <p className="text-sm text-zinc-600 leading-relaxed">
+                    Use the <span className="font-bold">Team</span> tab to keep track of your sales staff and their roles. You can add new members or remove existing ones as your team grows.
+                  </p>
+                </section>
+
+                <section className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <LayoutDashboard className="w-5 h-5 text-black" />
+                    <h3 className="font-bold text-zinc-900">Dashboard & Stats</h3>
+                  </div>
+                  <p className="text-sm text-zinc-600 leading-relaxed">
+                    The <span className="font-bold">Stats</span> tab provides a quick overview of total outstanding due amounts and lead counts to help you track business performance.
+                  </p>
+                </section>
+
+                <div className="pt-4">
+                  <Button className="w-full" onClick={() => setIsGuideOpen(false)}>Got it, thanks!</Button>
+                </div>
+              </div>
             </motion.div>
           </div>
         )}
