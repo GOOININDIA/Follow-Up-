@@ -1,0 +1,5 @@
+{
+  "name": "The Follow Up",
+  "description": "A professional follow-up reminder and team management application for bike dealerships.",
+  "requestFramePermissions": ["notifications"]
+}
